@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>选区截图</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+      body { cursor: crosshair; user-select: none; }
+      #frame {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: fill;
+        -webkit-user-drag: none;
+      }
+      #dim {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        pointer-events: none;
+      }
+      #sel {
+        position: fixed;
+        display: none;
+        border: 2px solid #3aa0ff;
+        box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+        cursor: crosshair;
+      }
+      #size {
+        position: fixed;
+        display: none;
+        padding: 2px 8px;
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.72);
+        color: #fff;
+        font: 12px/1.5 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
+        pointer-events: none;
+        white-space: nowrap;
+      }
+      #tip {
+        position: fixed;
+        left: 50%;
+        top: 18px;
+        transform: translateX(-50%);
+        padding: 6px 14px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.7);
+        color: #fff;
+        font: 13px/1.5 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
+        pointer-events: none;
+      }
+      .hide { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <img id="frame" alt="" />
+    <div id="dim"></div>
+    <div id="sel"></div>
+    <div id="size"></div>
+    <div id="tip">拖拽框选区域 · 右键或回车确认 · Esc 取消</div>
+    <script>
+      (() => {
+        const q = new URLSearchParams(location.search);
+        const frame = document.getElementById('frame');
+        const dim = document.getElementById('dim');
+        const sel = document.getElementById('sel');
+        const size = document.getElementById('size');
+        const tip = document.getElementById('tip');
+        frame.src = 'file:///' + (q.get('img') || '').replace(/\\/g, '/').replace(/^\//, '');
+
+        let rect = null;
+        let dragging = false;
+        let start = null;
+
+        const paint = () => {
+          if (!rect || rect.w < 1 || rect.h < 1) {
+            sel.style.display = 'none';
+            size.style.display = 'none';
+            return;
+          }
+          sel.style.display = 'block';
+          sel.style.left = rect.x + 'px';
+          sel.style.top = rect.y + 'px';
+          sel.style.width = rect.w + 'px';
+          sel.style.height = rect.h + 'px';
+          size.style.display = 'block';
+          size.textContent = Math.round(rect.w) + ' × ' + Math.round(rect.h);
+          const below = rect.y + rect.h + 26 < window.innerHeight;
+          size.style.left = Math.min(window.innerWidth - 90, rect.x) + 'px';
+          size.style.top = (below ? rect.y + rect.h + 6 : rect.y - 26) + 'px';
+        };
+
+        document.addEventListener('pointerdown', (e) => {
+          if (e.button === 2) return;
+          dragging = true;
+          start = { x: e.clientX, y: e.clientY };
+          rect = { x: start.x, y: start.y, w: 0, h: 0 };
+          tip.classList.add('hide');
+          paint();
+          e.preventDefault();
+        });
+        document.addEventListener('pointermove', (e) => {
+          if (!dragging) return;
+          const cx = Math.max(0, Math.min(window.innerWidth, e.clientX));
+          const cy = Math.max(0, Math.min(window.innerHeight, e.clientY));
+          rect = { x: Math.min(start.x, cx), y: Math.min(start.y, cy), w: Math.abs(cx - start.x), h: Math.abs(cy - start.y) };
+          paint();
+        });
+        document.addEventListener('pointerup', () => {
+          dragging = false;
+        });
+
+        const confirm = () => {
+          if (!rect || rect.w < 4 || rect.h < 4) return;
+          if (window.selectorApi && window.selectorApi.confirm) {
+            window.selectorApi.confirm({ x: rect.x, y: rect.y, w: rect.w, h: rect.h });
+          }
+        };
+        const cancel = () => {
+          if (window.selectorApi && window.selectorApi.cancel) window.selectorApi.cancel();
+        };
+        document.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          confirm();
+        });
+        document.addEventListener('dblclick', (e) => {
+          e.preventDefault();
+          confirm();
+        });
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') confirm();
+          if (e.key === 'Escape') cancel();
+        });
+      })();
+    </script>
+  </body>
+</html>

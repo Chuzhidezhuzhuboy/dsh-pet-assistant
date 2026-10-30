@@ -1,0 +1,5 @@
+# dsh-pet-assistant 的挂载声明：往配置树里插一行宿主插件。
+# id 必须与包名一致（DSH 商城契约按它比对 entryId）。
+- insert:
+    - id: dsh-pet-assistant
+      name: 'dsh-pet-assistant'

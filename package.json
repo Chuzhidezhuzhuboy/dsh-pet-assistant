@@ -1,0 +1,31 @@
+{
+  "name": "dsh-pet-assistant",
+  "version": "0.1.0",
+  "description": "给 dsh-pet 加一个桌面小卡片：右键宠物进入会话，能看历史、继续聊、框选截图提问、新建工作区、归档会话、接收回答里的文件。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "dsh-pet",
+    "screenshot",
+    "desktop-pet"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

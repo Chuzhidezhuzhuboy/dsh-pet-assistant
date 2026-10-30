@@ -1,0 +1,6 @@
+{
+  "name": "pet-assist-card-helper",
+  "private": true,
+  "type": "commonjs",
+  "main": "main.js"
+}

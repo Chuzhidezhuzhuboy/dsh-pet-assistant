@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>桌宠助手</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; background: transparent; }
+      body {
+        display: flex;
+        font: 13px/1.55 'Microsoft YaHei UI', 'Segoe UI', sans-serif;
+        color: #2b2b2b;
+        user-select: none;
+        overflow: hidden;
+      }
+      .card {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.985);
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        border-radius: 14px;
+        box-shadow: 0 16px 44px rgba(0, 0, 0, 0.28);
+      }
+      .head {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 6px 6px 10px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        flex: none;
+        -webkit-app-region: drag;
+      }
+      .icon-btn {
+        -webkit-app-region: no-drag;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        line-height: 1;
+        color: rgba(43, 43, 43, 0.55);
+        padding: 2px 7px;
+        border-radius: 6px;
+        font-size: 15px;
+        font-family: inherit;
+      }
+      .icon-btn:hover { background: rgba(0, 0, 0, 0.08); color: #2b2b2b; }
+      .title {
+        flex: 1;
+        font-size: 12px;
+        font-weight: 600;
+        color: rgba(43, 43, 43, 0.78);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .picker { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+      .picker[hidden] { display: none; }
+      .plist { flex: 1; overflow-y: auto; padding: 6px 8px; }
+      .plist::-webkit-scrollbar { width: 9px; }
+      .plist::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 5px; }
+      .prow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      .prow:hover { background: rgba(58, 160, 255, 0.1); }
+      .prow.archived .pname { opacity: 0.55; }
+      .prow .pact {
+        flex: none;
+        border: none;
+        background: transparent;
+        color: rgba(43, 43, 43, 0.4);
+        font-family: inherit;
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 6px;
+        cursor: pointer;
+        opacity: 0;
+      }
+      .prow:hover .pact { opacity: 1; }
+      .prow .pact:hover { background: rgba(0, 0, 0, 0.08); color: #2b2b2b; }
+      .prow .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(0, 0, 0, 0.18); flex: none; }
+      .prow .dot.live { background: #2fbf71; }
+      .prow .pname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+      .prow .pdir {
+        font-size: 11px;
+        color: rgba(43, 43, 43, 0.45);
+        flex: none;
+        max-width: 42%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .pfoot {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+      }
+      .pempty { padding: 24px 12px; text-align: center; color: rgba(43, 43, 43, 0.5); }
+
+      .convo { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+      .convo[hidden] { display: none; }
+      .chat {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 8px 12px 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        user-select: text;
+      }
+      .chat::-webkit-scrollbar { width: 9px; }
+      /* 点图片看大图 */
+      .lightbox {
+        position: fixed;
+        inset: 0;
+        z-index: 9;
+        background: rgba(0, 0, 0, 0.84);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: zoom-out;
+      }
+      .lightbox img {
+        max-width: 96%;
+        max-height: 96%;
+        border-radius: 6px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      }
+      .msg img { cursor: zoom-in; }
+      .chat::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 5px; }
+      .msg { max-width: 92%; padding: 6px 10px; border-radius: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+      .msg.user { align-self: flex-end; background: #2b2b2b; color: #fff; }
+      .msg.bot { align-self: flex-start; background: rgba(0, 0, 0, 0.055); }
+      .msg.bot strong { font-weight: 600; }
+      .msg.bot code {
+        font-family: Consolas, monospace;
+        font-size: 12px;
+        background: rgba(0, 0, 0, 0.07);
+        padding: 1px 4px;
+        border-radius: 4px;
+      }
+      .msg img { display: block; max-width: 100%; max-height: 120px; border-radius: 6px; margin-top: 4px; }
+      .msg .pill { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+      .typing { color: rgba(43, 43, 43, 0.55); font-style: italic; }
+      .divider { text-align: center; font-size: 11px; color: rgba(43, 43, 43, 0.4); padding: 2px 0 6px; }
+
+      .files { display: flex; flex-direction: column; gap: 4px; margin: 2px 0 6px; }
+      .file {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        background: rgba(0, 0, 0, 0.04);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 8px;
+        padding: 4px 8px;
+      }
+      .fname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+      .fsize { font-size: 11px; color: rgba(43, 43, 43, 0.5); }
+      .mini {
+        border: none;
+        background: rgba(58, 160, 255, 0.14);
+        color: #1a6dcc;
+        border-radius: 7px;
+        padding: 3px 8px;
+        font-size: 11px;
+        font-family: inherit;
+        cursor: pointer;
+      }
+      .mini:hover:not(:disabled) { background: rgba(58, 160, 255, 0.24); }
+      .mini:disabled { opacity: 0.5; cursor: default; }
+      .fstatus { flex-basis: 100%; font-size: 11px; color: rgba(43, 43, 43, 0.55); overflow-wrap: anywhere; }
+      .fstatus.err { color: #d94f3d; }
+
+      .stage {
+        position: relative;
+        flex: none;
+        max-height: 130px;
+        background: #111;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .stage[hidden] { display: none; }
+      .stage img { display: block; max-width: 100%; max-height: 100%; -webkit-user-drag: none; }
+
+      textarea {
+        border: none;
+        outline: none;
+        resize: none;
+        padding: 9px 14px;
+        font-family: inherit;
+        font-size: 13px;
+        min-height: 40px;
+        max-height: 90px;
+        flex: none;
+      }
+      .foot { display: flex; align-items: center; gap: 8px; padding: 0 12px 10px; flex: none; }
+      .err { flex: 1; color: #d94f3d; font-size: 12px; overflow-wrap: anywhere; }
+      button.btn { border: none; border-radius: 9px; padding: 6px 14px; font-family: inherit; font-size: 13px; cursor: pointer; }
+      button.btn:disabled { opacity: 0.5; cursor: default; }
+      .shot { background: rgba(58, 160, 255, 0.14); color: #1a6dcc; }
+      .shot:hover:not(:disabled) { background: rgba(58, 160, 255, 0.24); }
+      .cancel { background: rgba(0, 0, 0, 0.07); color: #2b2b2b; }
+      .send { background: #2b2b2b; color: #fff; }
+
+      .grip {
+        position: fixed;
+        right: 2px;
+        bottom: 2px;
+        width: 16px;
+        height: 16px;
+        cursor: nwse-resize;
+        opacity: 0.35;
+        background: repeating-linear-gradient(135deg, transparent 0 2px, #2b2b2b 2px 3px);
+        border-bottom-right-radius: 12px;
+        z-index: 2;
+      }
+      .grip:hover { opacity: 0.7; }
+    </style>
+  </head>
+  <body>
+    <div class="card" id="card">
+      <div class="head">
+        <button class="icon-btn" id="back" type="button" title="返回会话列表" hidden>‹</button>
+        <div class="title" id="title">选择会话</div>
+        <button class="icon-btn" id="close" type="button" title="关闭">×</button>
+      </div>
+
+      <div class="picker" id="picker">
+        <div class="plist" id="plist"></div>
+        <div class="pfoot">
+          <button class="btn shot" id="new-ws" type="button" title="选一个目录，用它新建工作区和会话">＋ 新建工作区</button>
+          <button class="btn cancel" id="toggle-arch" type="button" title="显示/隐藏已归档的会话">显示已归档</button>
+          <div class="err" id="perr"></div>
+        </div>
+      </div>
+
+      <div class="convo" id="convo" hidden>
+        <div class="chat" id="chat"></div>
+        <div class="stage" id="stage" hidden><img id="img" alt="" /></div>
+        <textarea id="input" rows="1" placeholder="想说什么…（Enter 发送，Shift+Enter 换行）"></textarea>
+        <div class="foot">
+          <button class="btn shot" id="shot" type="button">截图</button>
+          <div class="err" id="err"></div>
+          <button class="btn cancel" id="close2" type="button">关闭</button>
+          <button class="btn send" id="send" type="button">发送</button>
+        </div>
+      </div>
+    </div>
+    <div class="grip"></div>
+
+    <script>
+      (() => {
+        const q = new URLSearchParams(location.search);
+        const base = q.get('base') || '';
+        const api = window.cardApi || null;
+
+        const card = document.getElementById('card');
+        const titleEl = document.getElementById('title');
+        const backBtn = document.getElementById('back');
+        const picker = document.getElementById('picker');
+        const plist = document.getElementById('plist');
+        const perr = document.getElementById('perr');
+        const convo = document.getElementById('convo');
+        const chat = document.getElementById('chat');
+        const stage = document.getElementById('stage');
+        const img = document.getElementById('img');
+        const input = document.getElementById('input');
+        const errBox = document.getElementById('err');
+        const btnShot = document.getElementById('shot');
+        const btnSend = document.getElementById('send');
+        const btnNew = document.getElementById('new-ws');
+        const btnToggle = document.getElementById('toggle-arch');
+
+        let sessionId = '';
+        let showArchived = false;
+        let shot = null;
+        let sending = false;
+        let answerTimer = null;
+
+        const el = (tag, cls, text) => {
+          const n = document.createElement(tag);
+          if (cls) n.className = cls;
+          if (text != null) n.textContent = text;
+          return n;
+        };
+        const renderMarkdown = (node, text) => {
+          const esc = String(text == null ? '' : text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+          node.innerHTML = esc.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>').replace(/`([^`\n]+)`/g, '<code>$1</code>');
+        };
+        async function j(url, init) {
+          const r = await fetch(url, init);
+          const t = await r.json().catch(() => null);
+          if (!t || typeof t !== 'object') throw new Error('响应非法');
+          return t;
+        }
+
+        let lastFit = { w: 0, h: 0 };
+        let userSized = false;
+        function setCardSize(w, h, force) {
+          if (!api || typeof api.resize !== 'function') return;
+          if (userSized && !force) return;
+          const vw = (window.screen && window.screen.availWidth ? window.screen.availWidth : 1280) - 80;
+          const vh = (window.screen && window.screen.availHeight ? window.screen.availHeight : 800) - 80;
+          const nw = Math.max(320, Math.min(vw, Math.round(w)));
+          const nh = Math.max(200, Math.min(vh, Math.round(h)));
+          lastFit = { w: nw, h: nh };
+          api.resize(nw, nh);
+        }
+        window.addEventListener('resize', () => {
+          if (!lastFit.w) {
+            lastFit = { w: window.innerWidth, h: window.innerHeight };
+            return;
+          }
+          if (Math.abs(window.innerWidth - lastFit.w) > 4 || Math.abs(window.innerHeight - lastFit.h) > 4) userSized = true;
+        });
+
+        const close = () => {
+          if (api && api.close) api.close();
+          else window.close();
+        };
+        document.getElementById('close').addEventListener('click', close);
+        document.getElementById('close2').addEventListener('click', close);
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') close();
+        });
+
+        const scrollBottom = () => {
+          chat.scrollTop = chat.scrollHeight;
+        };
+
+        // ---------- 会话列表 ----------
+        async function showPicker() {
+          picker.hidden = false;
+          convo.hidden = true;
+          backBtn.hidden = true;
+          titleEl.textContent = '选择会话';
+          setCardSize(420, 480);
+          btnToggle.textContent = showArchived ? '只看在用' : '显示已归档';
+          plist.textContent = '';
+          plist.appendChild(el('div', 'pempty', '读取中…'));
+          try {
+            const r = await j(base + '/sessions' + (showArchived ? '?archived=1' : ''));
+            const items = (Array.isArray(r.items) ? r.items : []).filter((s) => s && (s.title || s.live));
+            plist.textContent = '';
+            if (!items.length) {
+              plist.appendChild(el('div', 'pempty', showArchived ? '没有已归档的会话' : '还没有会话，先点下面「新建工作区」'));
+              return;
+            }
+            for (const s of items) plist.appendChild(sessionRow(s));
+          } catch (e) {
+            plist.textContent = '';
+            plist.appendChild(el('div', 'pempty', '读取会话失败：' + (e && e.message ? e.message : e)));
+          }
+        }
+
+        function sessionRow(s) {
+          const row = el('div', 'prow' + (s.archived ? ' archived' : ''));
+          const name = el('div', 'pname', s.title || String(s.id).slice(0, 10));
+          const dirName = s.cwd ? s.cwd.split(/[\\/]/).filter(Boolean).pop() : '';
+          row.append(el('div', 'dot' + (s.live ? ' live' : '')), name, el('div', 'pdir', dirName || ''));
+          const act = el('button', 'pact', s.archived ? '取消归档' : '归档');
+          act.type = 'button';
+          act.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            act.disabled = true;
+            act.textContent = '…';
+            try {
+              const r = await j(base + '/archive', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ sessionId: s.id, archived: !s.archived }),
+              });
+              if (r.ok !== true) {
+                perr.textContent = (s.archived ? '取消归档失败：' : '归档失败：') + String(r.message || '未知原因');
+                act.disabled = false;
+                act.textContent = s.archived ? '取消归档' : '归档';
+                return;
+              }
+              perr.textContent = s.archived ? '已取消归档' : '已归档（可以在「显示已归档」里找回）';
+              await showPicker();
+            } catch (err) {
+              perr.textContent = '操作异常：' + (err && err.message ? err.message : err);
+              act.disabled = false;
+              act.textContent = s.archived ? '取消归档' : '归档';
+            }
+          });
+          row.appendChild(act);
+          row.addEventListener('click', () => void openSession(s.id, s.title || ''));
+          return row;
+        }
+
+        btnToggle.addEventListener('click', () => {
+          showArchived = !showArchived;
+          perr.textContent = '';
+          void showPicker();
+        });
+
+        // ---------- 进入会话 ----------
+        async function openSession(id, title) {
+          sessionId = id;
+          picker.hidden = true;
+          convo.hidden = false;
+          backBtn.hidden = false;
+          titleEl.textContent = title || String(id).slice(0, 10);
+          chat.textContent = '';
+          shot = null;
+          stage.hidden = true;
+          img.removeAttribute('src');
+          btnShot.textContent = '截图';
+          errBox.textContent = '';
+          setCardSize(480, 620, true);
+          chat.appendChild(el('div', 'pempty', '读取历史…'));
+          try {
+            const r = await j(base + '/history?sessionId=' + encodeURIComponent(id) + '&max=60');
+            chat.textContent = '';
+            const items = Array.isArray(r.items) ? r.items : [];
+            if (!items.length) {
+              chat.appendChild(el('div', 'pempty', '这里还没有对话，直接说吧'));
+            } else {
+              for (const m of items) appendMessage(m.role, m.text, m.images);
+              chat.appendChild(el('div', 'divider', '以上是历史 · 继续聊吧'));
+            }
+            scrollBottom();
+          } catch (e) {
+            chat.textContent = '';
+            chat.appendChild(el('div', 'pempty', '历史读取失败：' + (e && e.message ? e.message : e)));
+          }
+          input.focus();
+        }
+
+        /** 点图片看大图：铺满卡片的黑色遮罩；滚轮缩放，点任意处或 Esc 关闭 */
+        function openLightbox(src) {
+          const mask = el('div', 'lightbox');
+          const pic = el('img');
+          pic.src = src;
+          mask.appendChild(pic);
+          let scale = 1;
+          const applyScale = () => {
+            pic.style.transform = 'scale(' + scale.toFixed(2) + ')';
+          };
+          const close = () => {
+            mask.remove();
+            document.removeEventListener('keydown', onKey, true);
+          };
+          const onKey = (e) => {
+            if (e.key === 'Escape') close();
+          };
+          // 滚轮缩放（唯一额外操作）：向上放大、向下缩小，不改变点击关闭
+          mask.addEventListener(
+            'wheel',
+            (e) => {
+              e.preventDefault();
+              scale = Math.min(8, Math.max(0.2, scale * (e.deltaY < 0 ? 1.12 : 1 / 1.12)));
+              applyScale();
+            },
+            { passive: false },
+          );
+          mask.addEventListener('click', close);
+          document.addEventListener('keydown', onKey, true);
+          document.body.appendChild(mask);
+        }
+
+        /** 历史里的图片只显示占位，点了才去宿主取（懒加载，避免打开会话时卡住） */
+        function imageChip(im) {
+          const chip = el('button', 'mini', '🖼 查看图片');
+          chip.type = 'button';
+          chip.style.marginTop = '4px';
+          chip.addEventListener('click', async () => {
+            chip.disabled = true;
+            chip.textContent = '加载中…';
+            try {
+              const r = await j(base + '/attachment?sessionId=' + encodeURIComponent(sessionId) + '&id=' + encodeURIComponent(im.id));
+              if (r.ok !== true) {
+                chip.textContent = '加载失败';
+                chip.disabled = false;
+                return;
+              }
+              const pic = el('img');
+              pic.src = r.dataUrl;
+              pic.addEventListener('click', () => openLightbox(r.dataUrl));
+              // 保持视口不动：以"占位按钮原来的位置"为锚点，展开多高就把滚动条补多少
+              const anchorTop = chip.getBoundingClientRect().top;
+              chip.replaceWith(pic);
+              chat.scrollTop += pic.getBoundingClientRect().top - anchorTop;
+            } catch (e) {
+              chip.textContent = '加载失败';
+              chip.disabled = false;
+            }
+          });
+          return chip;
+        }
+
+        function appendMessage(role, text, images) {
+          const m = el('div', 'msg ' + (role === 'user' ? 'user' : 'bot'));
+          if (role === 'user') {
+            if (text) m.appendChild(document.createTextNode(text));
+            for (const im of images || []) m.appendChild(imageChip(im));
+          } else {
+            renderMarkdown(m, text);
+          }
+          chat.appendChild(m);
+          return m;
+        }
+
+        backBtn.addEventListener('click', () => {
+          if (answerTimer) {
+            clearInterval(answerTimer);
+            answerTimer = null;
+          }
+          void showPicker();
+        });
+
+        // ---------- 新建工作区 ----------
+        btnNew.addEventListener('click', async () => {
+          perr.textContent = '';
+          btnNew.disabled = true;
+          const label = btnNew.textContent;
+          btnNew.textContent = '选目录…';
+          try {
+            const picked = api && api.pickFolder ? await api.pickFolder() : { ok: false, message: '当前环境不支持选目录' };
+            if (!picked || picked.ok !== true) {
+              if (!(picked && picked.canceled)) perr.textContent = '选目录失败：' + ((picked && picked.message) || '未知原因');
+              return;
+            }
+            btnNew.textContent = '创建中…';
+            const r = await j(base + '/new-session', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ cwd: picked.path }),
+            });
+            if (r.ok !== true || !r.sessionId) {
+              perr.textContent = '新建失败：' + String(r.message || '未知原因');
+              return;
+            }
+            await openSession(r.sessionId, r.name || '');
+          } catch (e) {
+            perr.textContent = '新建异常：' + (e && e.message ? e.message : e);
+          } finally {
+            btnNew.textContent = label;
+            btnNew.disabled = false;
+          }
+        });
+
+        // ---------- 截图（全屏选区） ----------
+        btnShot.addEventListener('click', async () => {
+          errBox.textContent = '';
+          btnShot.disabled = true;
+          const prev = shot ? '重拍' : '截图';
+          btnShot.textContent = '选区中…';
+          try {
+            const r = api && api.captureRegion ? await api.captureRegion() : { ok: false, message: '当前环境不支持选区截图' };
+            if (!r || r.ok !== true) {
+              if (!(r && r.canceled)) errBox.textContent = '截图失败：' + ((r && r.message) || '未知原因');
+              btnShot.textContent = prev;
+              return;
+            }
+            shot = { dataUrl: r.dataUrl, width: r.width, height: r.height };
+            img.src = r.dataUrl;
+            stage.hidden = false;
+            btnShot.textContent = '重拍';
+            errBox.textContent = '已选区 ' + r.width + '×' + r.height;
+          } catch (e) {
+            errBox.textContent = '截图异常：' + (e && e.message ? e.message : e);
+            btnShot.textContent = prev;
+          } finally {
+            btnShot.disabled = false;
+          }
+        });
+
+        // ---------- 发送 + 等回答 ----------
+        function addTyping() {
+          const m = el('div', 'msg bot typing', '正在想… 0:00');
+          chat.appendChild(m);
+          scrollBottom();
+          return m;
+        }
+
+        function waitAnswer(since, typingEl) {
+          const deadline = Date.now() + 60 * 60 * 1000;
+          if (answerTimer) clearInterval(answerTimer);
+          answerTimer = setInterval(async () => {
+            if (Date.now() > deadline) {
+              clearInterval(answerTimer);
+              answerTimer = null;
+              typingEl.textContent = '等了 1 小时还没结果，去会话里看吧';
+              typingEl.classList.remove('typing');
+              return;
+            }
+            try {
+              const r = await j(base + '/answer?sessionId=' + encodeURIComponent(sessionId) + '&since=' + since);
+              if (r.ok === true && r.text) {
+                clearInterval(answerTimer);
+                answerTimer = null;
+                const m = el('div', 'msg bot');
+                renderMarkdown(m, r.text);
+                typingEl.replaceWith(m);
+                scrollBottom();
+                void renderFiles(r.text);
+                return;
+              }
+              if (r && r.ok === true) {
+                const secs = Math.max(0, Math.floor((r.elapsed || 0) / 1000));
+                const label =
+                  '正在想… ' +
+                  Math.floor(secs / 60) +
+                  ':' +
+                  String(secs % 60).padStart(2, '0') +
+                  (r.progress ? '　' + String(r.progress).slice(0, 48) : '');
+                if (typingEl.textContent !== label) typingEl.textContent = label;
+              }
+            } catch {
+              /* 下一轮 */
+            }
+          }, 1200);
+        }
+
+        async function send() {
+          if (sending || !sessionId) return;
+          const text = input.value.trim();
+          if (!text && !shot) {
+            errBox.textContent = '写点什么，或者点「截图」';
+            return;
+          }
+          sending = true;
+          btnSend.disabled = true;
+          btnSend.textContent = '发送中…';
+          errBox.textContent = '';
+          try {
+            const image = shot ? shot.dataUrl : null;
+            const since = Date.now();
+            const r = await j(base + '/submit', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ sessionId, text, image }),
+            });
+            if (r.ok !== true) {
+              errBox.textContent = '发送失败：' + String(r.message || r.reason || r.error || '未知原因');
+              return;
+            }
+            const mine = el('div', 'msg user');
+            if (text) mine.appendChild(document.createTextNode(text));
+            if (image) {
+              const im = el('img');
+              im.src = image;
+              im.addEventListener('click', () => openLightbox(image));
+              mine.appendChild(im);
+            }
+            chat.appendChild(mine);
+            scrollBottom();
+            input.value = '';
+            input.style.height = '';
+            shot = null;
+            stage.hidden = true;
+            img.removeAttribute('src');
+            btnShot.textContent = '截图';
+            waitAnswer(since, addTyping());
+          } catch (e) {
+            errBox.textContent = '发送异常：' + (e && e.message ? e.message : e);
+          } finally {
+            sending = false;
+            btnSend.disabled = false;
+            btnSend.textContent = '发送';
+            input.focus();
+          }
+        }
+        btnSend.addEventListener('click', () => void send());
+        input.addEventListener('input', () => {
+          input.style.height = 'auto';
+          input.style.height = Math.min(90, Math.max(40, input.scrollHeight)) + 'px';
+        });
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            void send();
+          }
+        });
+
+        // ---------- 回答里的文件 ----------
+        async function renderFiles(text) {
+          try {
+            const r = await j(base + '/files', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ text, sessionId }),
+            });
+            const items = Array.isArray(r.items) ? r.items : [];
+            if (!items.length) return;
+            const box = el('div', 'files');
+            for (const f of items) {
+              const row = el('div', 'file');
+              row.appendChild(el('div', 'fname', '📄 ' + f.name));
+              row.appendChild(el('span', 'fsize', fmtSize(f.size)));
+              const save = el('button', 'mini', '保存到…');
+              save.type = 'button';
+              save.addEventListener('click', async () => {
+                const label = save.textContent;
+                save.disabled = true;
+                save.textContent = '选择中…';
+                try {
+                  const res = api && api.saveFile ? await api.saveFile(f.path) : { ok: false, message: '当前环境不支持' };
+                  if (res && res.ok) {
+                    save.textContent = '已保存';
+                    row.appendChild(el('div', 'fstatus', '→ ' + res.path));
+                  } else if (res && res.canceled) {
+                    save.textContent = label;
+                  } else {
+                    save.textContent = label;
+                    row.appendChild(el('div', 'fstatus err', '保存失败：' + ((res && res.message) || '未知')));
+                  }
+                } finally {
+                  save.disabled = false;
+                }
+              });
+              row.appendChild(save);
+              const reveal = el('button', 'mini', '文件夹');
+              reveal.type = 'button';
+              reveal.addEventListener('click', () => {
+                if (api && api.reveal) api.reveal(f.path);
+              });
+              row.appendChild(reveal);
+              box.appendChild(row);
+            }
+            chat.appendChild(box);
+            scrollBottom();
+          } catch {
+            /* 文件条失败不影响对话 */
+          }
+        }
+        function fmtSize(n) {
+          if (n == null) return '';
+          if (n < 1024) return n + ' B';
+          if (n < 1024 * 1024) return Math.round(n / 1024) + ' KB';
+          return (n / 1024 / 1024).toFixed(1) + ' MB';
+        }
+
+        // ---------- 右下角把手 ----------
+        const grip = document.querySelector('.grip');
+        if (grip && api && typeof api.resize === 'function') {
+          let drag = null;
+          grip.addEventListener('pointerdown', (e) => {
+            drag = { x: e.clientX, y: e.clientY, w: window.innerWidth, h: window.innerHeight };
+            grip.setPointerCapture(e.pointerId);
+            e.preventDefault();
+          });
+          grip.addEventListener('pointermove', (e) => {
+            if (!drag) return;
+            api.resize(drag.w + (e.clientX - drag.x), drag.h + (e.clientY - drag.y));
+          });
+          const end = (e) => {
+            if (!drag) return;
+            drag = null;
+            try {
+              grip.releasePointerCapture(e.pointerId);
+            } catch {
+              /* ignore */
+            }
+          };
+          grip.addEventListener('pointerup', end);
+          grip.addEventListener('pointercancel', end);
+        }
+
+        // ---------- 启动 ----------
+        const mode = q.get('mode') || 'sessions';
+        if (mode === 'error') {
+          titleEl.textContent = '出错了';
+          plist.appendChild(el('div', 'pempty', q.get('message') || '未知错误'));
+          document.querySelector('.pfoot').hidden = true;
+          setCardSize(380, 170);
+        } else {
+          void showPicker();
+        }
+      })();
+    </script>
+  </body>
+</html>

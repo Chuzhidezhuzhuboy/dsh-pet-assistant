@@ -1,0 +1,22 @@
+# 依赖与缓存
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# 打包产物（发布时挂到 Release 附件，不进仓库）
+*.tgz
+*.tar.gz
+*.zip
+
+# 日志与临时文件
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 编辑器与本地配置
+.vscode/
+.idea/
+*.local
