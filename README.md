@@ -57,16 +57,32 @@
 
 ## 安装
 
-```powershell
-# 方式一：本地目录
-pnpm dsh plugin install <本目录路径>
+**方式一：插件页安装（推荐，桌面版）**
 
-# 方式二：打包后的 tgz
-pnpm pack
-pnpm dsh plugin install ./dsh-pet-assistant-0.1.0.tgz
+1. 打开 DeepSeek Harness → 插件
+2. 在安装输入框里粘贴下面这个链接
+3. 安装完成后重启 DeepSeek Harness
+4. 右键桌面宠物，菜单里出现「进入会话」即成功
+
+```
+https://github.com/Chuzhidezhuzhuboy/dsh-pet-assistant/releases/download/v0.1.0/dsh-pet-assistant-0.1.0.tgz
 ```
 
-装完**重启一次 DeepSeek Harness**，然后右键宠物，菜单里会多出「进入会话」。
+**方式二：命令行**（需要装了 dsh CLI；桌面版请用方式一）
+
+下载 `dsh-pet-assistant-0.1.0.tgz`，在它所在的目录里执行：
+
+```
+dsh plugin install ./dsh-pet-assistant-0.1.0.tgz
+```
+
+**方式三：从源码装（需要本机有 git）**
+
+```
+dsh plugin install github:Chuzhidezhuzhuboy/dsh-pet-assistant
+```
+
+装完都要**重启一次 DeepSeek Harness**。
 
 ## 它动过 dsh-pet 的哪里
 

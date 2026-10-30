@@ -23,6 +23,14 @@
     "desktop-pet"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Chuzhidezhuzhuboy/dsh-pet-assistant.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Chuzhidezhuzhuboy/dsh-pet-assistant/issues"
+  },
+  "homepage": "https://github.com/Chuzhidezhuzhuboy/dsh-pet-assistant#readme",
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
