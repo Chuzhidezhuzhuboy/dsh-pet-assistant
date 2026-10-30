@@ -344,6 +344,27 @@
           chat.scrollTop = chat.scrollHeight;
         };
 
+        /**
+         * 判断一条消息是不是 DSH 注入的运行时上下文（不是用户亲手打的）。
+         * 用"特征词出现即命中"而不是"开头匹配"——DSH 每次发消息前都会写一条，
+         * 且不同版本的开头不一样（Current runtime context / Time sampled / Elapsed since …）。
+         */
+        const INJECTED_MARKERS = [
+          'current runtime context',
+          'current working directory:',
+          'current dsh file policy:',
+          'approval policy:',
+          'browser time zone for this request',
+          'time sampled while preparing turn',
+          'elapsed since the preceding',
+          'snapshot supersedes earlier',
+        ];
+        function isInjected(text) {
+          const t = String(text || '').toLowerCase();
+          if (!t.trim()) return false;
+          return INJECTED_MARKERS.some((m) => t.includes(m));
+        }
+
         // ---------- 会话列表 ----------
         async function showPicker() {
           picker.hidden = false;
@@ -433,7 +454,11 @@
             if (!items.length) {
               chat.appendChild(el('div', 'pempty', '这里还没有对话，直接说吧'));
             } else {
-              for (const m of items) appendMessage(m.role, m.text, m.images);
+              for (const m of items) {
+                // 跳过 DSH 注入的运行时上下文（用户没打过这些字）；带图片的消息一律保留
+                if (m.role === 'user' && !(m.images || []).length && isInjected(m.text)) continue;
+                appendMessage(m.role, m.text, m.images);
+              }
               chat.appendChild(el('div', 'divider', '以上是历史 · 继续聊吧'));
             }
             scrollBottom();
